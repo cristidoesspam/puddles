@@ -16,8 +16,11 @@ final class Puddle extends SingleQuadParticle {
 	static final double LIFT = 0.02;
 	static final float FILL_RANGE = 0.18f;
 
-	private static final int[] PIXELS = {16, 24, 32};
-	private static final int VARIANTS = 3;
+	private static final int[] PIXELS = {6, 8, 12, 16, 20};
+	private static final float[] SIZE_CUTS = {0.15f, 0.4f, 0.68f, 0.9f};
+	private static final float[] MUD = {0.46f, 0.34f, 0.22f};
+	private static final int CELLS_PER_BLOCK = 8;
+	private static final int VARIANTS = 6;
 	private static final float GROWTH_STEPS = 5f;
 
 	final long key;
@@ -28,24 +31,28 @@ final class Puddle extends SingleQuadParticle {
 	private final BlockPos ground;
 	private final BlockState surface;
 	private final Quaternionf rotation;
+	private final float opacity;
+	private final float[] plain;
+	private final float[] safe;
 	private float fill;
 	private float previousFill;
 	private int ticks;
 
-	private Puddle(ClientLevel level, long key, double x, double z, Ground.Spot spot, int pixels, int variant, float threshold, int turns) {
-		super(level, x, spot.top() + LIFT + variant * 0.004, z, Minecraft.getInstance().getAtlasManager()
+	private Puddle(ClientLevel level, long key, double x, double z, Ground.Spot spot, int pixels, int variant, float threshold, int turns, int rgb, float opacity) {
+		super(level, x, spot.top() + LIFT + variant % 3 * 0.004, z, Minecraft.getInstance().getAtlasManager()
 			.getAtlasOrThrow(AtlasIds.PARTICLES).getSprite(Puddles.id("puddle_" + pixels + "_" + variant)));
 		this.hasPhysics = false;
 		this.lifetime = Integer.MAX_VALUE;
 		this.key = key;
-		this.size = pixels / 16f;
+		this.size = pixels / (float) CELLS_PER_BLOCK;
 		this.top = spot.top();
 		this.threshold = threshold;
 		this.ground = spot.pos();
 		this.surface = spot.state();
 		this.rotation = new Quaternionf().rotateY(turns * Mth.HALF_PI).rotateX(-Mth.HALF_PI);
-		int water = level.getBiome(spot.pos()).value().getWaterColor();
-		this.setColor(ARGB.redFloat(water), ARGB.greenFloat(water), ARGB.blueFloat(water));
+		this.opacity = opacity;
+		this.plain = new float[] {ARGB.redFloat(rgb), ARGB.greenFloat(rgb), ARGB.blueFloat(rgb)};
+		this.safe = Shaders.safe(plain[0], plain[1], plain[2]);
 		this.alpha = 0f;
 	}
 
@@ -54,17 +61,32 @@ final class Puddle extends SingleQuadParticle {
 		if (spot == null || Layout.rand(column, row, 3) >= spot.weight()) {
 			return null;
 		}
-		double x = column + Math.round((0.5 + (Layout.rand(column, row, 4) - 0.5) * 0.5) * 16) / 16.0;
-		double z = row + Math.round((0.5 + (Layout.rand(column, row, 5) - 0.5) * 0.5) * 16) / 16.0;
+		double x = column + Math.round((0.5 + (Layout.rand(column, row, 4) - 0.5) * 0.5) * CELLS_PER_BLOCK) / (double) CELLS_PER_BLOCK;
+		double z = row + Math.round((0.5 + (Layout.rand(column, row, 5) - 0.5) * 0.5) * CELLS_PER_BLOCK) / (double) CELLS_PER_BLOCK;
 		float roll = Layout.rand(column, row, 6) - (region - 0.5f) * 0.4f;
-		for (int i = roll < 0.35f ? 0 : roll < 0.75f ? 1 : 2; i >= 0; i--) {
-			if (isFlat(level, spot, x, z, PIXELS[i] / 16f)) {
+		int choice = 0;
+		while (choice < SIZE_CUTS.length && roll >= SIZE_CUTS[choice]) {
+			choice++;
+		}
+		for (int i = choice; i >= 0; i--) {
+			if (isFlat(level, spot, x, z, PIXELS[i] / (float) CELLS_PER_BLOCK)) {
 				int variant = (int) (Layout.rand(column, row, 7) * VARIANTS) % VARIANTS;
 				int turns = (int) (Layout.rand(column, row, 8) * 4) % 4;
-				return new Puddle(level, BlockPos.asLong(column, 0, row), x, z, spot, PIXELS[i], variant, threshold, turns);
+				return new Puddle(level, BlockPos.asLong(column, 0, row), x, z, spot, PIXELS[i], variant, threshold, turns, tint(level, spot, column, row),
+					0.85f + 0.15f * Layout.rand(column, row, 22));
 			}
 		}
 		return null;
+	}
+
+	private static int tint(ClientLevel level, Ground.Spot spot, int column, int row) {
+		int water = level.getBiome(spot.pos()).value().getWaterColor();
+		float muddy = spot.mud() * (0.4f + 0.6f * Layout.rand(column, row, 21));
+		float light = 0.88f + 0.24f * Layout.rand(column, row, 20);
+		return ARGB.color(255,
+			Mth.clamp((int) (Mth.lerp(muddy, ARGB.red(water), MUD[0] * 255f) * light), 0, 255),
+			Mth.clamp((int) (Mth.lerp(muddy, ARGB.green(water), MUD[1] * 255f) * light), 0, 255),
+			Mth.clamp((int) (Mth.lerp(muddy, ARGB.blue(water), MUD[2] * 255f) * light), 0, 255));
 	}
 
 	private static boolean isFlat(ClientLevel level, Ground.Spot spot, double x, double z, float size) {
@@ -120,7 +142,9 @@ final class Puddle extends SingleQuadParticle {
 
 	@Override
 	public void extract(QuadParticleRenderState state, Camera camera, float partialTickTime) {
-		alpha = PuddleConfig.get().clarity / 100f;
+		alpha = PuddleConfig.get().clarity / 100f * opacity;
+		float[] color = Shaders.active() ? safe : plain;
+		setColor(color[0], color[1], color[2]);
 		extractRotatedQuad(state, camera, rotation, partialTickTime);
 	}
 

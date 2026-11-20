@@ -53,6 +53,7 @@ public final class PuddleField {
 		}
 		PuddleConfig config = PuddleConfig.get();
 		Wetness.tick(level, config);
+		Shaders.refresh();
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player == null || !config.enabled) {
 			if (!ACTIVE.isEmpty() || !RIPPLES.isEmpty()) {
@@ -146,7 +147,7 @@ public final class PuddleField {
 			double angle = random.nextFloat() * Mth.TWO_PI;
 			double distance = Math.sqrt(random.nextFloat()) * puddle.size * 0.3 * puddle.fill();
 			addRipple(level, puddle.x() + Math.cos(angle) * distance, puddle.top + Puddle.LIFT + 0.03,
-				puddle.z() + Math.sin(angle) * distance, 0.5f, config.clarity / 100f, 12 + random.nextInt(9));
+				puddle.z() + Math.sin(angle) * distance, random.nextInt(3) == 0 ? 0.75f : 0.5f, config.clarity / 100f, 12 + random.nextInt(9));
 		}
 	}
 

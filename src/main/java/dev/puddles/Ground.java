@@ -12,7 +12,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 final class Ground {
 	static final double MIN_HEIGHT = 0.8;
 
-	record Spot(BlockPos pos, BlockState state, double top, float weight) {}
+	record Spot(BlockPos pos, BlockState state, double top, float weight, float mud) {}
 
 	private Ground() {}
 
@@ -38,7 +38,7 @@ final class Ground {
 		if (!above.getFluidState().isEmpty() || !(above.isAir() || above.is(BlockTags.REPLACEABLE) && !above.is(BlockTags.SNOW))) {
 			return null;
 		}
-		return new Spot(pos, state, y + shape.max(Direction.Axis.Y), weight);
+		return new Spot(pos, state, y + shape.max(Direction.Axis.Y), weight, mud(state));
 	}
 
 	static boolean rains(ClientLevel level, int x, int z) {
@@ -52,6 +52,14 @@ final class Ground {
 	static boolean isOpen(ClientLevel level, BlockPos ground) {
 		return level.getHeight(Heightmap.Types.MOTION_BLOCKING, ground.getX(), ground.getZ()) - 1 == ground.getY()
 			&& rains(level, ground.getX(), ground.getZ());
+	}
+
+	private static float mud(BlockState state) {
+		if (state.is(Blocks.DIRT_PATH) || state.is(Blocks.MUD) || state.is(Blocks.CLAY) || state.is(Blocks.DIRT)
+				|| state.is(Blocks.COARSE_DIRT) || state.is(Blocks.ROOTED_DIRT)) {
+			return 0.22f;
+		}
+		return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.PODZOL) || state.is(Blocks.MYCELIUM) ? 0.06f : 0f;
 	}
 
 	private static float weight(BlockState state) {
