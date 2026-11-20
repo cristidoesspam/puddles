@@ -1,0 +1,40 @@
+{
+	"puddles.screen.title": "Puddles Settings",
+
+	"key.category.puddles.puddles": "Puddles",
+	"key.puddles.settings": "Open Puddles settings",
+	"key.puddles.toggle": "Toggle Puddles",
+	"puddles.toggle.on": "Puddles: ON",
+	"puddles.toggle.off": "Puddles: OFF",
+
+	"puddles.command.wet": "Puddles preview: %s%% wet. Use /puddles wet off to go back to the real weather.",
+	"puddles.command.wet_off": "Puddles preview off.",
+
+	"puddles.option.seconds.value": "%s: %ss",
+	"puddles.option.percent.value": "%s: %s%%",
+	"puddles.option.blocks.value": "%s: %s blocks",
+
+	"puddles.option.enabled": "Puddles",
+	"puddles.option.enabled.tooltip": "Master switch. When off, no puddles are drawn and any that exist disappear.",
+
+	"puddles.option.fill": "Fill Time",
+	"puddles.option.fill.tooltip": "How many seconds of steady rain it takes for every puddle to fill up. Light rain is slower.",
+
+	"puddles.option.dry": "Dry Time",
+	"puddles.option.dry.tooltip": "How many seconds it takes for a full set of puddles to dry up once the rain has stopped. The small ones go first.",
+
+	"puddles.option.amount": "Amount",
+	"puddles.option.amount.tooltip": "How many puddles form. Puddles gather in wet patches of ground, so even at 100% there are dry spots.",
+
+	"puddles.option.clarity": "Clarity",
+	"puddles.option.clarity.tooltip": "How strongly puddles show against the ground. Lower is more see-through.",
+
+	"puddles.option.range": "Range",
+	"puddles.option.range.tooltip": "How far from you puddles are drawn. Lower it if the game slows down.",
+
+	"puddles.option.ripples": "Rain Ripples",
+	"puddles.option.ripples.tooltip": "Rings that spread out on a puddle each time a raindrop lands.",
+
+	"puddles.option.splashes": "Splashes",
+	"puddles.option.splashes.tooltip": "Splash particles, ripples and a soft sound when you or a mob walk through a puddle."
+}
