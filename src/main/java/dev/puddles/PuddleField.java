@@ -39,6 +39,7 @@ public final class PuddleField {
 	public static void reset() {
 		ACTIVE.values().forEach(Puddle::remove);
 		RIPPLES.forEach(Ripple::remove);
+		Ripple.reset();
 		ACTIVE.clear();
 		NEAR.clear();
 		RIPPLES.clear();
@@ -52,7 +53,6 @@ public final class PuddleField {
 		}
 		PuddleConfig config = PuddleConfig.get();
 		Wetness.tick(level, config);
-		Puddle.setOvercast(level.getRainLevel(1f));
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player == null || !config.enabled) {
 			if (!ACTIVE.isEmpty() || !RIPPLES.isEmpty()) {
@@ -144,10 +144,9 @@ public final class PuddleField {
 		for (int i = 0; i < count; i++) {
 			Puddle puddle = NEAR.get(random.nextInt(NEAR.size()));
 			double angle = random.nextFloat() * Mth.TWO_PI;
-			double distance = Math.sqrt(random.nextFloat()) * puddle.size * 0.27 * puddle.fill();
+			double distance = Math.sqrt(random.nextFloat()) * puddle.size * 0.3 * puddle.fill();
 			addRipple(level, puddle.x() + Math.cos(angle) * distance, puddle.top + Puddle.LIFT + 0.03,
-				puddle.z() + Math.sin(angle) * distance, 0.5f + 0.5f * random.nextFloat(), 0.85f * config.clarity / 100f,
-				14 + random.nextInt(9));
+				puddle.z() + Math.sin(angle) * distance, 0.5f, config.clarity / 100f, 12 + random.nextInt(9));
 		}
 	}
 
@@ -169,7 +168,7 @@ public final class PuddleField {
 				continue;
 			}
 			double y = puddle.top + SPLASH_TOP;
-			addRipple(level, living.getX(), y, living.getZ(), 0.55f + 0.4f * random.nextFloat(), 0.8f, 12 + random.nextInt(6));
+			addRipple(level, living.getX(), y, living.getZ(), 1f, PuddleConfig.get().clarity / 100f, 10 + random.nextInt(5));
 			for (int i = 0; i < 2; i++) {
 				level.addParticle(ParticleTypes.SPLASH, living.getX() + (random.nextDouble() - 0.5) * 0.4, y,
 					living.getZ() + (random.nextDouble() - 0.5) * 0.4, 0, 0, 0);
@@ -195,11 +194,11 @@ public final class PuddleField {
 		return null;
 	}
 
-	private static void addRipple(ClientLevel level, double x, double y, double z, float reach, float strength, int lifetime) {
+	private static void addRipple(ClientLevel level, double x, double y, double z, float blocks, float strength, int lifetime) {
 		if (RIPPLES.size() >= RIPPLE_CAP) {
 			return;
 		}
-		Ripple ripple = new Ripple(level, x, y, z, reach, strength, lifetime);
+		Ripple ripple = new Ripple(level, x, y, z, blocks, strength, lifetime);
 		RIPPLES.add(ripple);
 		Minecraft.getInstance().particleEngine.add(ripple);
 	}

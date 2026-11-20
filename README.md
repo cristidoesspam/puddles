@@ -11,8 +11,9 @@ Nothing has to be installed on the server: it works in singleplayer and on any s
   - Sand, snow, ice, leaves and water never get one.
   - Only open ground gets puddles: nothing forms under a roof or a tree (the top of the roof gets them instead), and a puddle is skipped when it would hang over an edge or a step. Build a roof over one and it disappears.
   - Biomes without rain (deserts, snowy biomes) stay dry.
-- **Rain ripples.** Rings spread across a puddle every time a raindrop lands.
+- **Rain ripples.** Small pixel rings pop up on a puddle every time a raindrop lands.
 - **Splashes.** You, other players and mobs splash when walking through a puddle: spray, a ripple and a soft sound.
+- **They look like vanilla water.** The sprites are pixel art on the same 16-pixels-per-block grid as the terrain, turned only in quarter turns so the pixels line up, and they use the water colour of the biome: blue in plains, murky green in swamps.
 - **It matches the light.** Puddles are lit like the ground around them, so they go dark at night and under a stormy sky.
 
 ## Settings
@@ -24,7 +25,7 @@ Open them from **Mod Menu** (Config button) or bind a key under *Controls > Pudd
 | Puddles | on | Master switch |
 | Fill Time | 25 s | Seconds of steady rain for all puddles to fill |
 | Dry Time | 150 s | Seconds for all puddles to dry after the rain stops |
-| Amount | 70% | How many puddles form |
+| Amount | 45% | How many puddles form |
 | Clarity | 75% | How strongly puddles show; lower is more see-through |
 | Range | 24 blocks | How far from you puddles are drawn |
 | Rain Ripples | on | Rings where raindrops land |
@@ -36,7 +37,7 @@ Settings are saved in `config/puddles.json`. There are also two bindable keys: o
 
 ## How it works
 
-Puddles are ordinary particles lying flat on the ground, so the game does the culling, lighting and drawing. One wetness value rises while it rains and falls while it does not. Every puddle spot is fixed by a hash of its column and has its own wetness at which it appears, so the same ground always gets the same puddles, they appear and vanish in a steady order, and the mod keeps no list of them besides the ones near you. Every half second it checks the columns around you, finds the ground with the world's motion-blocking heightmap and makes the puddles that are due.
+Puddles are ordinary particles lying flat on the ground (three sizes, three shapes each), so the game does the culling, lighting and drawing. One wetness value rises while it rains and falls while it does not. Every puddle spot is fixed by a hash of its column and has its own wetness at which it appears, so the same ground always gets the same puddles, they appear and vanish in a steady order, and the mod keeps no list of them besides the ones near you. Every half second it checks the columns around you, finds the ground with the world's motion-blocking heightmap and makes the puddles that are due.
 
 ## Building
 
@@ -50,7 +51,7 @@ The jar is `build/libs/puddles-1.0.0.jar`. Needs JDK 25, Fabric Loader 0.19.5+, 
 
 ## Limits
 
-- The water is a tinted sprite, not a real reflection: it does not mirror the sky, trees or you.
+- The water is a flat tinted sprite, not a real reflection: it does not mirror the sky, trees or you.
 - A puddle only shows when it fits on one level of one kind of ground; on bumpy terrain some spots stay dry.
 - Ground under any solid block, glass included, counts as covered.
 - Shader packs that replace the particle pipeline may draw puddles differently.

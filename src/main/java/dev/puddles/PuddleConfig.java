@@ -29,7 +29,7 @@ public final class PuddleConfig {
 	public boolean enabled = true;
 	public int fillSeconds = 25;
 	public int drySeconds = 150;
-	public int amount = 70;
+	public int amount = 45;
 	public int clarity = 75;
 	public int range = 24;
 	public boolean ripples = true;

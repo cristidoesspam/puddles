@@ -7,20 +7,18 @@ import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.data.AtlasIds;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Quaternionf;
 
 final class Puddle extends SingleQuadParticle {
-	static final int VARIANTS = 4;
 	static final double LIFT = 0.02;
 	static final float FILL_RANGE = 0.18f;
 
-	private static final float[] SUNNY = {0.4f, 0.64f, 1f};
-	private static final float[] OVERCAST = {0.55f, 0.65f, 0.8f};
-	private static final float MAX_ALPHA = 0.95f;
-
-	private static float overcast;
+	private static final int[] PIXELS = {16, 24, 32};
+	private static final int VARIANTS = 3;
+	private static final float GROWTH_STEPS = 5f;
 
 	final long key;
 	final float size;
@@ -34,23 +32,21 @@ final class Puddle extends SingleQuadParticle {
 	private float previousFill;
 	private int ticks;
 
-	private Puddle(ClientLevel level, long key, double x, double z, Ground.Spot spot, int variant, float size, float threshold, float yaw) {
+	private Puddle(ClientLevel level, long key, double x, double z, Ground.Spot spot, int pixels, int variant, float threshold, int turns) {
 		super(level, x, spot.top() + LIFT + variant * 0.004, z, Minecraft.getInstance().getAtlasManager()
-			.getAtlasOrThrow(AtlasIds.PARTICLES).getSprite(Puddles.id("puddle_" + variant)));
+			.getAtlasOrThrow(AtlasIds.PARTICLES).getSprite(Puddles.id("puddle_" + pixels + "_" + variant)));
 		this.hasPhysics = false;
 		this.lifetime = Integer.MAX_VALUE;
 		this.key = key;
-		this.size = size;
+		this.size = pixels / 16f;
 		this.top = spot.top();
 		this.threshold = threshold;
 		this.ground = spot.pos();
 		this.surface = spot.state();
-		this.rotation = new Quaternionf().rotateY(yaw).rotateX(-Mth.HALF_PI);
+		this.rotation = new Quaternionf().rotateY(turns * Mth.HALF_PI).rotateX(-Mth.HALF_PI);
+		int water = level.getBiome(spot.pos()).value().getWaterColor();
+		this.setColor(ARGB.redFloat(water), ARGB.greenFloat(water), ARGB.blueFloat(water));
 		this.alpha = 0f;
-	}
-
-	static void setOvercast(float amount) {
-		overcast = Mth.clamp(amount, 0f, 1f);
 	}
 
 	static Puddle create(ClientLevel level, int column, int row, float region, float threshold) {
@@ -58,22 +54,21 @@ final class Puddle extends SingleQuadParticle {
 		if (spot == null || Layout.rand(column, row, 3) >= spot.weight()) {
 			return null;
 		}
-		double x = column + 0.5 + (Layout.rand(column, row, 4) - 0.5) * 0.5;
-		double z = row + 0.5 + (Layout.rand(column, row, 5) - 0.5) * 0.5;
-		float size = (1.15f + 1.4f * Layout.rand(column, row, 6)) * (0.8f + 0.5f * region);
-		if (!isFlat(level, spot, x, z, size)) {
-			size *= 0.55f;
-			if (!isFlat(level, spot, x, z, size)) {
-				return null;
+		double x = column + Math.round((0.5 + (Layout.rand(column, row, 4) - 0.5) * 0.5) * 16) / 16.0;
+		double z = row + Math.round((0.5 + (Layout.rand(column, row, 5) - 0.5) * 0.5) * 16) / 16.0;
+		float roll = Layout.rand(column, row, 6) - (region - 0.5f) * 0.4f;
+		for (int i = roll < 0.35f ? 0 : roll < 0.75f ? 1 : 2; i >= 0; i--) {
+			if (isFlat(level, spot, x, z, PIXELS[i] / 16f)) {
+				int variant = (int) (Layout.rand(column, row, 7) * VARIANTS) % VARIANTS;
+				int turns = (int) (Layout.rand(column, row, 8) * 4) % 4;
+				return new Puddle(level, BlockPos.asLong(column, 0, row), x, z, spot, PIXELS[i], variant, threshold, turns);
 			}
 		}
-		int variant = (int) (Layout.rand(column, row, 7) * VARIANTS) % VARIANTS;
-		float yaw = Layout.rand(column, row, 8) * Mth.TWO_PI;
-		return new Puddle(level, BlockPos.asLong(column, 0, row), x, z, spot, variant, size, threshold, yaw);
+		return null;
 	}
 
 	private static boolean isFlat(ClientLevel level, Ground.Spot spot, double x, double z, float size) {
-		double reach = size * 0.4;
+		double reach = size * 0.45;
 		for (int i = 0; i < 8; i++) {
 			double angle = i * Mth.PI / 4.0;
 			Ground.Spot other = Ground.probe(level, Mth.floor(x + Math.cos(angle) * reach), Mth.floor(z + Math.sin(angle) * reach));
@@ -97,7 +92,7 @@ final class Puddle extends SingleQuadParticle {
 	}
 
 	boolean contains(double px, double py, double pz) {
-		double radius = size * 0.3 * fill;
+		double radius = size * 0.4 * fill;
 		double dx = px - x;
 		double dz = pz - z;
 		return fill > 0.35f && Math.abs(py - top) < 0.6 && dx * dx + dz * dz < radius * radius;
@@ -119,15 +114,13 @@ final class Puddle extends SingleQuadParticle {
 
 	@Override
 	public float getQuadSize(float partialTick) {
-		float eased = Layout.smooth(0f, 1f, Mth.lerp(partialTick, previousFill, fill));
-		return size / 2f * eased;
+		float stage = Math.round(Mth.lerp(partialTick, previousFill, fill) * GROWTH_STEPS) / GROWTH_STEPS;
+		return size / 2f * stage;
 	}
 
 	@Override
 	public void extract(QuadParticleRenderState state, Camera camera, float partialTickTime) {
-		float shown = Mth.lerp(partialTickTime, previousFill, fill);
-		alpha = MAX_ALPHA * PuddleConfig.get().clarity / 100f * Mth.clamp(shown * 2f, 0f, 1f);
-		setColor(Mth.lerp(overcast, SUNNY[0], OVERCAST[0]), Mth.lerp(overcast, SUNNY[1], OVERCAST[1]), Mth.lerp(overcast, SUNNY[2], OVERCAST[2]));
+		alpha = PuddleConfig.get().clarity / 100f;
 		extractRotatedQuad(state, camera, rotation, partialTickTime);
 	}
 
