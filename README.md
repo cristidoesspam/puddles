@@ -3,6 +3,10 @@
 A client-side Fabric mod for Minecraft 26.3. When it rains, puddles form on the ground, ripple under the raindrops, splash when you walk through them, and dry up again once the weather clears.
 Nothing has to be installed on the server: it works in singleplayer and on any server.
 
+![The three puddle styles with no shaders, BSL and Complementary Reimagined](docs/styles.jpg)
+
+Rows are the three styles, columns are no shaders, BSL and Complementary Reimagined. [Close-up version](docs/styles-close.jpg).
+
 ## What you get
 
 - **Puddles that fill up.** While it rains, puddles appear a few at a time, and they are more common the longer it rains. Rain that stops lets them fade out and dry up.
