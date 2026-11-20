@@ -1,13 +1,16 @@
 package dev.puddles.client;
 
 import dev.puddles.PuddleConfig;
+import dev.puddles.PuddleStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.StringRepresentable;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
@@ -24,6 +27,7 @@ public class PuddlesScreen extends OptionsSubScreen {
 	@Override
 	protected void addOptions() {
 		list.addBig(toggle("enabled", config.enabled, v -> config.enabled = v));
+		list.addBig(style());
 		list.addBig(slider("fill", PuddleConfig.MIN_FILL, PuddleConfig.MAX_FILL, config.fillSeconds, "seconds", v -> config.fillSeconds = v));
 		list.addBig(slider("dry", PuddleConfig.MIN_DRY, PuddleConfig.MAX_DRY, config.drySeconds, "seconds", v -> config.drySeconds = v));
 		list.addBig(slider("amount", PuddleConfig.MIN_AMOUNT, PuddleConfig.MAX_AMOUNT, config.amount, "percent", v -> config.amount = v));
@@ -38,6 +42,13 @@ public class PuddlesScreen extends OptionsSubScreen {
 	public void removed() {
 		PuddleConfig.save();
 		super.removed();
+	}
+
+	private OptionInstance<PuddleStyle> style() {
+		return new OptionInstance<>(KEY + "style", tooltip("style"),
+			(caption, value) -> Component.translatable(KEY + "style." + value.getSerializedName()),
+			new OptionInstance.Enum<>(List.of(PuddleStyle.values()), StringRepresentable.fromEnum(PuddleStyle::values)),
+			config.style, v -> config.style = v);
 	}
 
 	private static <T> OptionInstance.TooltipSupplier<T> tooltip(String name) {

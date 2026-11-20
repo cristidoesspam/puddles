@@ -22,7 +22,8 @@ public final class PuddleField {
 	private static final int SCAN_INTERVAL = 10;
 	private static final int RIPPLE_CAP = 300;
 	private static final int MAX_SPAWNS_PER_SCAN = 120;
-	private static final float MAX_CHANCE = 0.3f;
+	private static final float PIXEL_CHANCE = 0.3f;
+	private static final float BLOCK_CHANCE = 0.2f;
 	private static final float RIPPLE_RATE = 0.03f;
 	private static final double RIPPLE_RANGE = 20.0;
 	private static final double STEP_RANGE = 24.0;
@@ -33,6 +34,7 @@ public final class PuddleField {
 	private static final List<Puddle> NEAR = new ArrayList<>();
 	private static final ArrayDeque<Ripple> RIPPLES = new ArrayDeque<>();
 	private static ClientLevel world;
+	private static PuddleStyle style;
 
 	private PuddleField() {}
 
@@ -40,6 +42,7 @@ public final class PuddleField {
 		ACTIVE.values().forEach(Puddle::remove);
 		RIPPLES.forEach(Ripple::remove);
 		Ripple.reset();
+		BlockPuddle.reset();
 		ACTIVE.clear();
 		NEAR.clear();
 		RIPPLES.clear();
@@ -52,6 +55,10 @@ public final class PuddleField {
 			Wetness.reset(level.getRainLevel(1f) > 0.1f ? 0.5f : 0f);
 		}
 		PuddleConfig config = PuddleConfig.get();
+		if (config.style != style) {
+			reset();
+			style = config.style;
+		}
 		Wetness.tick(level, config);
 		Shaders.refresh();
 		LocalPlayer player = Minecraft.getInstance().player;
@@ -116,7 +123,7 @@ public final class PuddleField {
 				int x = centerX + dx;
 				int z = centerZ + dz;
 				float region = Layout.region(x, z);
-				float chance = MAX_CHANCE * amount * Layout.smooth(0.15f, 0.6f, region);
+				float chance = (config.style == PuddleStyle.BLOCKS ? BLOCK_CHANCE : PIXEL_CHANCE) * amount * Layout.smooth(0.15f, 0.6f, region);
 				if (Layout.rand(x, z, 1) >= chance) {
 					continue;
 				}
@@ -124,11 +131,19 @@ public final class PuddleField {
 				if (wet < threshold || ACTIVE.containsKey(BlockPos.asLong(x, 0, z)) || !Ground.rains(level, x, z)) {
 					continue;
 				}
-				Puddle puddle = Puddle.create(level, x, z, region, threshold);
-				if (puddle != null) {
-					ACTIVE.put(puddle.key, puddle);
-					Minecraft.getInstance().particleEngine.add(puddle);
-					spawned++;
+				List<? extends Puddle> made;
+				if (config.style == PuddleStyle.BLOCKS) {
+					made = BlockPuddle.create(level, ACTIVE, x, z, threshold);
+				} else {
+					PixelPuddle puddle = PixelPuddle.create(level, x, z, region, threshold);
+					made = puddle == null ? null : List.of(puddle);
+				}
+				if (made != null) {
+					for (Puddle puddle : made) {
+						ACTIVE.put(puddle.key, puddle);
+						Minecraft.getInstance().particleEngine.add(puddle);
+					}
+					spawned += made.size();
 				}
 			}
 		}
@@ -145,7 +160,7 @@ public final class PuddleField {
 		for (int i = 0; i < count; i++) {
 			Puddle puddle = NEAR.get(random.nextInt(NEAR.size()));
 			double angle = random.nextFloat() * Mth.TWO_PI;
-			double distance = Math.sqrt(random.nextFloat()) * puddle.size * 0.3 * puddle.fill();
+			double distance = Math.sqrt(random.nextFloat()) * puddle.spread() * puddle.fill();
 			addRipple(level, puddle.x() + Math.cos(angle) * distance, puddle.top + Puddle.LIFT + 0.03,
 				puddle.z() + Math.sin(angle) * distance, random.nextInt(3) == 0 ? 0.75f : 0.5f, config.clarity / 100f, 12 + random.nextInt(9));
 		}

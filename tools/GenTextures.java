@@ -215,18 +215,31 @@ public class GenTextures {
 		return image;
 	}
 
-	private static BufferedImage tinted(BufferedImage source, double red, double green, double blue) {
-		BufferedImage out = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		for (int y = 0; y < source.getHeight(); y++) {
-			for (int x = 0; x < source.getWidth(); x++) {
-				int pixel = source.getRGB(x, y);
-				int r = (int) (((pixel >> 16) & 255) * red);
-				int g = (int) (((pixel >> 8) & 255) * green);
-				int b = (int) ((pixel & 255) * blue);
-				out.setRGB(x, y, (pixel & 0xFF000000) | r << 16 | g << 8 | b);
+	private static void water(BufferedImage image, int[][] cells) {
+		Random random = new Random(7);
+		double[] tint = {0.247, 0.463, 0.894};
+		int block = 40;
+		for (int[] cell : cells) {
+			for (int py = 0; py < 8; py++) {
+				for (int px = 0; px < 8; px++) {
+					double shade = 0.69 + (random.nextDouble() - 0.5) * 0.28;
+					int x0 = 24 + cell[0] * block + px * 5;
+					int y0 = 24 + cell[1] * block + py * 5;
+					int under = image.getRGB(x0, y0);
+					int out = 0xFF000000;
+					for (int c = 0; c < 3; c++) {
+						int shift = 16 - 8 * c;
+						int value = (int) Math.round(0.7 * tint[c] * shade * 255 + 0.3 * ((under >> shift) & 255));
+						out |= Math.min(255, value) << shift;
+					}
+					for (int j = 0; j < 5; j++) {
+						for (int i = 0; i < 5; i++) {
+							image.setRGB(x0 + i, y0 + j, out);
+						}
+					}
+				}
 			}
 		}
-		return out;
 	}
 
 	private static BufferedImage icon() {
@@ -244,11 +257,11 @@ public class GenTextures {
 				}
 			}
 		}
+		water(image, new int[][] {{0, 0}, {1, 0}, {0, 1}});
 		Graphics2D g = image.createGraphics();
 		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-		g.drawImage(tinted(puddle(16, 3, 99), 0.247, 0.463, 0.894), 8, 8, 112, 112, null);
-		g.drawImage(ripple(2), 40, 40, 48, 48, null);
-		g.drawImage(ripple(1), 70, 24, 32, 32, null);
+		g.drawImage(ripple(2), 26, 26, 36, 36, null);
+		g.drawImage(ripple(1), 70, 30, 28, 28, null);
 		g.dispose();
 		return image;
 	}

@@ -27,10 +27,11 @@ public final class PuddleConfig {
 	private static PuddleConfig current = new PuddleConfig();
 
 	public boolean enabled = true;
+	public PuddleStyle style = PuddleStyle.BLOCKS;
 	public int fillSeconds = 25;
 	public int drySeconds = 150;
 	public int amount = 45;
-	public int clarity = 75;
+	public int clarity = 100;
 	public int range = 24;
 	public boolean ripples = true;
 	public boolean splashes = true;
@@ -50,6 +51,9 @@ public final class PuddleConfig {
 				PuddleConfig loaded = GSON.fromJson(reader, PuddleConfig.class);
 				if (loaded != null) {
 					current = loaded;
+					if (current.style == null) {
+						current.style = PuddleStyle.BLOCKS;
+					}
 					current.fillSeconds = Mth.clamp(current.fillSeconds, MIN_FILL, MAX_FILL);
 					current.drySeconds = Mth.clamp(current.drySeconds, MIN_DRY, MAX_DRY);
 					current.amount = Mth.clamp(current.amount, MIN_AMOUNT, MAX_AMOUNT);
