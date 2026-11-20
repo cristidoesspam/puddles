@@ -27,7 +27,7 @@ public final class PuddleConfig {
 	private static PuddleConfig current = new PuddleConfig();
 
 	public boolean enabled = true;
-	public PuddleStyle style = PuddleStyle.BLOCKS;
+	public PuddleStyle style = PuddleStyle.PATCHES;
 	public int fillSeconds = 25;
 	public int drySeconds = 150;
 	public int amount = 45;
@@ -52,7 +52,7 @@ public final class PuddleConfig {
 				if (loaded != null) {
 					current = loaded;
 					if (current.style == null) {
-						current.style = PuddleStyle.BLOCKS;
+						current.style = PuddleStyle.PATCHES;
 					}
 					current.fillSeconds = Mth.clamp(current.fillSeconds, MIN_FILL, MAX_FILL);
 					current.drySeconds = Mth.clamp(current.drySeconds, MIN_DRY, MAX_DRY);

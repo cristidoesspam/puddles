@@ -1,13 +1,9 @@
 package dev.puddles;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
-import net.minecraft.data.AtlasIds;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.joml.Quaternionf;
@@ -17,10 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 final class BlockPuddle extends Puddle {
-	private static final Identifier WATER = Identifier.withDefaultNamespace("block/water_still");
 	private static final Quaternionf FLAT = new Quaternionf().rotateX(-Mth.HALF_PI);
-
-	private static TextureAtlasSprite sprite;
 
 	private final float opacity;
 	private final float red;
@@ -28,22 +21,11 @@ final class BlockPuddle extends Puddle {
 	private final float blue;
 
 	private BlockPuddle(ClientLevel level, int column, int row, Ground.Spot spot, float threshold, int rgb, float opacity) {
-		super(level, BlockPos.asLong(column, 0, row), column + 0.5, spot.top() + LIFT, row + 0.5, spot, water(), 1f, threshold);
+		super(level, BlockPos.asLong(column, 0, row), column + 0.5, spot.top() + LIFT, row + 0.5, spot, Water.sprite(), 1f, threshold);
 		this.opacity = opacity;
 		this.red = ARGB.redFloat(rgb);
 		this.green = ARGB.greenFloat(rgb);
 		this.blue = ARGB.blueFloat(rgb);
-	}
-
-	static void reset() {
-		sprite = null;
-	}
-
-	private static TextureAtlasSprite water() {
-		if (sprite == null) {
-			sprite = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.BLOCKS).getSprite(WATER);
-		}
-		return sprite;
 	}
 
 	static List<BlockPuddle> create(ClientLevel level, Map<Long, Puddle> active, int column, int row, float threshold) {

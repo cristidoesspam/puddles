@@ -3,6 +3,7 @@ package dev.puddles;
 import net.minecraft.util.StringRepresentable;
 
 public enum PuddleStyle implements StringRepresentable {
+	PATCHES("patches"),
 	BLOCKS("blocks"),
 	PIXELS("pixels");
 

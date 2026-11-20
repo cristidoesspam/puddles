@@ -1,3 +1,5 @@
+import dev.puddles.Masks;
+
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -33,115 +35,6 @@ public class GenTextures {
 		return alpha << 24 | channel << 16 | channel << 8 | channel;
 	}
 
-	private static void fill(boolean[][] cells, int x0, int y0, int x1, int y1) {
-		for (int y = Math.max(0, y0); y < Math.min(cells.length, y1); y++) {
-			for (int x = Math.max(0, x0); x < Math.min(cells.length, x1); x++) {
-				cells[y][x] = true;
-			}
-		}
-	}
-
-	private static void clear(boolean[][] cells, int x0, int y0, int x1, int y1) {
-		for (int y = Math.max(0, y0); y < Math.min(cells.length, y1); y++) {
-			for (int x = Math.max(0, x0); x < Math.min(cells.length, x1); x++) {
-				cells[y][x] = false;
-			}
-		}
-	}
-
-	private static void squircle(boolean[][] cells, double radius, double shiftX, double shiftY) {
-		int size = cells.length;
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				double dx = Math.abs(x + 0.5 - size / 2.0 - shiftX) / (size / 2.0);
-				double dy = Math.abs(y + 0.5 - size / 2.0 - shiftY) / (size / 2.0);
-				if (Math.pow(dx, 3) + Math.pow(dy, 3) < Math.pow(radius, 3)) {
-					cells[y][x] = true;
-				}
-			}
-		}
-	}
-
-	private static boolean[][] shape(int size, int variant, Random random) {
-		boolean[][] cells = new boolean[size][size];
-		int chunk = Math.max(2, size / 4);
-		int corner = random.nextInt(4);
-		int cx = (corner & 1) == 0 ? 0 : size - 1;
-		int cy = (corner & 2) == 0 ? 0 : size - 1;
-		switch (variant) {
-			case 0 -> squircle(cells, 0.86, 0, 0);
-			case 1 -> {
-				squircle(cells, 0.8, 0, 0);
-				int length = Math.max(2, size / 3);
-				int start = 1 + random.nextInt(Math.max(1, size - length - 1));
-				int side = random.nextInt(4);
-				for (int along = start; along < Math.min(size, start + length); along++) {
-					for (int depth = 0; depth < chunk; depth++) {
-						switch (side) {
-							case 0 -> cells[depth][along] = true;
-							case 1 -> cells[size - 1 - depth][along] = true;
-							case 2 -> cells[along][depth] = true;
-							default -> cells[along][size - 1 - depth] = true;
-						}
-					}
-				}
-			}
-			case 2 -> {
-				squircle(cells, 0.9, 0, 0);
-				int reach = chunk + 1;
-				clear(cells, cx == 0 ? 0 : size - reach, cy == 0 ? 0 : size - reach, cx == 0 ? reach : size, cy == 0 ? reach : size);
-			}
-			case 3 -> {
-				fill(cells, 1, 1, size - 1, size - 1);
-				int half = Math.max(2, size / 2);
-				clear(cells, cx == 0 ? 0 : size - half, cy == 0 ? 0 : size - half, cx == 0 ? half : size, cy == 0 ? half : size);
-			}
-			case 4 -> {
-				int top = Math.max(1, size * 3 / 10);
-				fill(cells, 0, top, size, size - top);
-				cells[top][0] = false;
-				cells[top][size - 1] = false;
-				cells[size - top - 1][0] = false;
-				cells[size - top - 1][size - 1] = false;
-			}
-			default -> {
-				double shift = size / 8.0;
-				double sx = (corner & 1) == 0 ? -shift : shift;
-				double sy = (corner & 2) == 0 ? -shift : shift;
-				squircle(cells, 0.66, sx, sy);
-				if (size >= 8) {
-					int ox = cx == 0 ? size - 2 : 0;
-					int oy = cy == 0 ? size - 2 : 0;
-					fill(cells, ox, oy, ox + 2, oy + 2);
-					int px = cx == 0 ? size - 1 : 0;
-					int py = cy == 0 ? 1 + random.nextInt(2) : size - 2 - random.nextInt(2);
-					fill(cells, px, py, px + 1, py + 2);
-				}
-			}
-		}
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				if (cells[y][x] && neighbours(cells, x, y) == 0) {
-					cells[y][x] = false;
-				}
-			}
-		}
-		return cells;
-	}
-
-	private static boolean filled(boolean[][] cells, int x, int y) {
-		return y >= 0 && x >= 0 && y < cells.length && x < cells.length && cells[y][x];
-	}
-
-	private static int neighbours(boolean[][] cells, int x, int y) {
-		int count = 0;
-		count += filled(cells, x - 1, y) ? 1 : 0;
-		count += filled(cells, x + 1, y) ? 1 : 0;
-		count += filled(cells, x, y - 1) ? 1 : 0;
-		count += filled(cells, x, y + 1) ? 1 : 0;
-		return count;
-	}
-
 	private static int[][] layers(boolean[][] cells) {
 		int size = cells.length;
 		int[][] layer = new int[size][size];
@@ -149,12 +42,10 @@ public class GenTextures {
 			boolean changed = false;
 			for (int y = 0; y < size; y++) {
 				for (int x = 0; x < size; x++) {
-					if (cells[y][x] && layer[y][x] == step && neighbours(cells, x, y) == 4) {
+					if (cells[y][x] && layer[y][x] == step && Masks.neighbours(cells, x, y) == 4) {
 						boolean deeper = true;
 						for (int[] d : new int[][] {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
-							int nx = x + d[0];
-							int ny = y + d[1];
-							deeper &= layer[ny][nx] >= step;
+							deeper &= layer[y + d[1]][x + d[0]] >= step;
 						}
 						if (deeper) {
 							layer[y][x] = step + 1;
@@ -172,7 +63,7 @@ public class GenTextures {
 
 	private static BufferedImage puddle(int size, int variant, long seed) {
 		Random random = new Random(seed);
-		boolean[][] cells = shape(size, variant, random);
+		boolean[][] cells = Masks.get(size, variant);
 		int[][] layer = layers(cells);
 		BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
 		double[] flat = {0.88, 0.92, 0.94, 0.97, 1.0};
@@ -182,15 +73,9 @@ public class GenTextures {
 				if (!cells[y][x]) {
 					continue;
 				}
-				boolean edge = neighbours(cells, x, y) < 4;
-				double shade;
-				if (edge) {
-					shade = 0.88;
-				} else if (deep) {
-					shade = Math.max(0.88, 0.99 - 0.03 * Math.min(layer[y][x], 4) + (random.nextInt(3) - 1) * 0.015);
-				} else {
-					shade = flat[random.nextInt(flat.length)];
-				}
+				double shade = deep
+					? Math.max(0.88, 0.99 - 0.03 * Math.min(layer[y][x], 4) + (random.nextInt(3) - 1) * 0.015)
+					: flat[random.nextInt(flat.length)];
 				image.setRGB(x, y, argb(shade, 255));
 			}
 		}
@@ -215,27 +100,27 @@ public class GenTextures {
 		return image;
 	}
 
-	private static void water(BufferedImage image, int[][] cells) {
+	private static void water(BufferedImage image, boolean[][] cells, int left, int top, int pixel) {
 		Random random = new Random(7);
 		double[] tint = {0.247, 0.463, 0.894};
-		int block = 40;
-		for (int[] cell : cells) {
-			for (int py = 0; py < 8; py++) {
-				for (int px = 0; px < 8; px++) {
-					double shade = 0.69 + (random.nextDouble() - 0.5) * 0.28;
-					int x0 = 24 + cell[0] * block + px * 5;
-					int y0 = 24 + cell[1] * block + py * 5;
-					int under = image.getRGB(x0, y0);
-					int out = 0xFF000000;
-					for (int c = 0; c < 3; c++) {
-						int shift = 16 - 8 * c;
-						int value = (int) Math.round(0.7 * tint[c] * shade * 255 + 0.3 * ((under >> shift) & 255));
-						out |= Math.min(255, value) << shift;
-					}
-					for (int j = 0; j < 5; j++) {
-						for (int i = 0; i < 5; i++) {
-							image.setRGB(x0 + i, y0 + j, out);
-						}
+		for (int y = 0; y < cells.length; y++) {
+			for (int x = 0; x < cells.length; x++) {
+				if (!cells[y][x]) {
+					continue;
+				}
+				double shade = 0.69 + (random.nextDouble() - 0.5) * 0.28;
+				int x0 = left + x * pixel;
+				int y0 = top + y * pixel;
+				int under = image.getRGB(x0, y0);
+				int out = 0xFF000000;
+				for (int c = 0; c < 3; c++) {
+					int shift = 16 - 8 * c;
+					int value = (int) Math.round(0.7 * tint[c] * shade * 255 + 0.3 * ((under >> shift) & 255));
+					out |= Math.min(255, value) << shift;
+				}
+				for (int j = 0; j < pixel; j++) {
+					for (int i = 0; i < pixel; i++) {
+						image.setRGB(x0 + i, y0 + j, out);
 					}
 				}
 			}
@@ -257,11 +142,11 @@ public class GenTextures {
 				}
 			}
 		}
-		water(image, new int[][] {{0, 0}, {1, 0}, {0, 1}});
+		water(image, Masks.turned(16, 1, 1), 0, 0, 8);
 		Graphics2D g = image.createGraphics();
 		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-		g.drawImage(ripple(2), 26, 26, 36, 36, null);
-		g.drawImage(ripple(1), 70, 30, 28, 28, null);
+		g.drawImage(ripple(2), 34, 38, 36, 36, null);
+		g.drawImage(ripple(1), 76, 62, 28, 28, null);
 		g.dispose();
 		return image;
 	}

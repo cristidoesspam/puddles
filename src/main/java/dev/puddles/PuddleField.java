@@ -42,7 +42,7 @@ public final class PuddleField {
 		ACTIVE.values().forEach(Puddle::remove);
 		RIPPLES.forEach(Ripple::remove);
 		Ripple.reset();
-		BlockPuddle.reset();
+		Water.reset();
 		ACTIVE.clear();
 		NEAR.clear();
 		RIPPLES.clear();
@@ -131,13 +131,11 @@ public final class PuddleField {
 				if (wet < threshold || ACTIVE.containsKey(BlockPos.asLong(x, 0, z)) || !Ground.rains(level, x, z)) {
 					continue;
 				}
-				List<? extends Puddle> made;
-				if (config.style == PuddleStyle.BLOCKS) {
-					made = BlockPuddle.create(level, ACTIVE, x, z, threshold);
-				} else {
-					PixelPuddle puddle = PixelPuddle.create(level, x, z, region, threshold);
-					made = puddle == null ? null : List.of(puddle);
-				}
+				List<? extends Puddle> made = switch (config.style) {
+					case BLOCKS -> BlockPuddle.create(level, ACTIVE, x, z, threshold);
+					case PATCHES -> single(PatchPuddle.create(level, x, z, region, threshold));
+					case PIXELS -> single(PixelPuddle.create(level, x, z, region, threshold));
+				};
 				if (made != null) {
 					for (Puddle puddle : made) {
 						ACTIVE.put(puddle.key, puddle);
@@ -147,6 +145,10 @@ public final class PuddleField {
 				}
 			}
 		}
+	}
+
+	private static List<Puddle> single(Puddle puddle) {
+		return puddle == null ? null : List.of(puddle);
 	}
 
 	private static void rain(ClientLevel level, PuddleConfig config) {

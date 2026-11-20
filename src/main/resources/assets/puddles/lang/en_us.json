@@ -18,9 +18,10 @@
 	"puddles.option.enabled.tooltip": "Master switch. When off, no puddles are drawn and any that exist disappear.",
 
 	"puddles.option.style": "Style",
+	"puddles.option.style.patches": "Water Patches",
 	"puddles.option.style.blocks": "Water Blocks",
 	"puddles.option.style.pixels": "Pixel Puddles",
-	"puddles.option.style.tooltip": "Water Blocks: whole blocks of real water on the block grid, in shapes of one to a few blocks, using the water texture. Pixel Puddles: chunky pixel-art puddles in many shapes and sizes.",
+	"puddles.option.style.tooltip": "Water Patches: squarish puddles of many sizes and shapes, filled with the real water texture. Water Blocks: whole blocks of water on the block grid. Pixel Puddles: chunky pixel-art puddles without the water texture.",
 
 	"puddles.option.fill": "Fill Time",
 	"puddles.option.fill.tooltip": "How many seconds of steady rain it takes for every puddle to fill up. Light rain is slower.",
